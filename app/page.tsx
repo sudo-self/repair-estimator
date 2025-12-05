@@ -175,7 +175,7 @@ export default function Home() {
       status = 'assessment';
     }
 
-    // Adjust cost based on device brand
+ 
     if (formData.deviceBrand === 'apple') {
       const costParts = cost.replace('$', '').split(' - ');
       const minCost = parseInt(costParts[0]) + 50;
