@@ -1,10 +1,24 @@
-// components/DeviceForm.js
+// components/DeviceForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, FormEvent, ChangeEvent } from 'react';
 
-export default function DeviceForm({ onSubmit, isLoading }) {
-  const [formData, setFormData] = useState({
+type DeviceFormProps = {
+  onSubmit: (formData: any) => void;
+  isLoading: boolean;
+};
+
+type FormData = {
+  userName: string;
+  userEmail: string;
+  deviceType: string;
+  deviceBrand: string;
+  deviceModel: string;
+  deviceIssue: string;
+};
+
+export default function DeviceForm({ onSubmit, isLoading }: DeviceFormProps) {
+  const [formData, setFormData] = useState<FormData>({
     userName: '',
     userEmail: '',
     deviceType: '',
@@ -13,7 +27,7 @@ export default function DeviceForm({ onSubmit, isLoading }) {
     deviceIssue: ''
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -21,7 +35,7 @@ export default function DeviceForm({ onSubmit, isLoading }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
     // Reset form
@@ -145,7 +159,7 @@ export default function DeviceForm({ onSubmit, isLoading }) {
           id="deviceIssue"
           value={formData.deviceIssue}
           onChange={handleChange}
-          rows="4"
+          rows={4}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Please describe the problem with your device in detail..."
           required
