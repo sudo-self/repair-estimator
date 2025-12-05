@@ -4,50 +4,96 @@ import { useState, useEffect } from 'react';
 import DeviceForm from '@/components/DeviceForm';
 import QuoteDisplay from '@/components/QuoteDisplay';
 import SubmissionsList from '@/components/SubmissionsList';
-import { fetchDeviceInfo, fetchPhoneSpecs } from '@/lib/api';
+import { fetchPhoneSpecs } from '@/lib/api';
+
+type FormData = {
+  userName: string;
+  userEmail: string;
+  deviceType: string;
+  deviceBrand: string;
+  deviceModel: string;
+  deviceIssue: string;
+};
+
+type DeviceInfo = {
+  deviceName: string;
+  deviceType: string;
+  specifications: any;
+  [key: string]: any;
+};
+
+type Quote = {
+  assessment: string;
+  cost: string;
+  time: string;
+  status: string;
+  deviceId: string;
+};
+
+type Submission = {
+  id: string;
+  userName: string;
+  userEmail: string;
+  deviceType: string;
+  deviceBrand: string;
+  deviceModel: string;
+  deviceIssue: string;
+  deviceInfo: DeviceInfo;
+  quote: Quote;
+  timestamp: string;
+  status: string;
+};
 
 export default function Home() {
-  const [submissions, setSubmissions] = useState([]);
-  const [currentQuote, setCurrentQuote] = useState(null);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [currentQuote, setCurrentQuote] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load submissions from localStorage on initial render
+
   useEffect(() => {
     const savedSubmissions = localStorage.getItem('deviceSubmissions');
     if (savedSubmissions) {
-      setSubmissions(JSON.parse(savedSubmissions));
+      try {
+        setSubmissions(JSON.parse(savedSubmissions));
+      } catch (error) {
+        console.error('Error parsing saved submissions:', error);
+      }
     }
   }, []);
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async (formData: FormData) => {
     setIsLoading(true);
     
     try {
-      // Get device information from real API
-      let deviceInfo = {};
+   
+      let deviceInfo: DeviceInfo = {
+        deviceName: `${formData.deviceBrand} ${formData.deviceModel}`,
+        deviceType: formData.deviceType,
+        specifications: {},
+      };
       
       if (formData.deviceType === 'smartphone' && formData.deviceBrand && formData.deviceModel) {
         try {
-          // Try to get phone specs from DeviceSpecifications API
+       
           deviceInfo = await fetchPhoneSpecs(formData.deviceBrand, formData.deviceModel);
         } catch (error) {
           console.log('Could not fetch phone specs, using fallback');
         }
       }
       
-      // If no API data, create basic device info
+     
       if (!deviceInfo || Object.keys(deviceInfo).length === 0) {
         deviceInfo = {
           deviceName: `${formData.deviceBrand} ${formData.deviceModel}`,
           deviceType: formData.deviceType,
-          specifications: 'Details not available from API',
+          specifications: { message: 'Details not available from API' },
         };
       }
 
-      // Generate a repair quote
+
       const quote = generateRepairQuote(formData, deviceInfo);
 
-      const newSubmission = {
+      const newSubmission: Submission = {
         id: Date.now().toString(),
         ...formData,
         deviceInfo,
@@ -56,12 +102,12 @@ export default function Home() {
         status: 'pending'
       };
 
-      // Update state
+  
       const updatedSubmissions = [newSubmission, ...submissions];
       setSubmissions(updatedSubmissions);
       setCurrentQuote({ ...quote, formData, deviceInfo });
 
-      // Save to localStorage
+   
       localStorage.setItem('deviceSubmissions', JSON.stringify(updatedSubmissions));
 
     } catch (error) {
@@ -72,11 +118,11 @@ export default function Home() {
     }
   };
 
-  const generateRepairQuote = (formData, deviceInfo) => {
+  const generateRepairQuote = (formData: FormData, deviceInfo: DeviceInfo): Quote => {
     const issue = formData.deviceIssue.toLowerCase();
-    let assessment, cost, time, status;
+    let assessment: string, cost: string, time: string, status: string;
 
-    // Realistic repair quote logic
+    // quote logic
     if (issue.includes('screen') || issue.includes('display') || issue.includes('crack')) {
       assessment = 'Screen replacement needed. Common repair with high success rate.';
       cost = formData.deviceType === 'smartphone' ? '$89 - $249' :
@@ -111,9 +157,12 @@ export default function Home() {
       status = 'assessment';
     }
 
-    // Adjust cost based on device brand
+ 
     if (formData.deviceBrand === 'apple') {
-      cost = `$${parseInt(cost.replace('$', '').split(' - ')[0]) + 50} - $${parseInt(cost.replace('$', '').split(' - ')[1]) + 100}`;
+      const costParts = cost.replace('$', '').split(' - ');
+      const minCost = parseInt(costParts[0]) + 50;
+      const maxCost = parseInt(costParts[1]) + 100;
+      cost = `$${minCost} - $${maxCost}`;
     }
 
     return {
@@ -125,14 +174,14 @@ export default function Home() {
     };
   };
 
-  const handleRespond = (submissionId) => {
+  const handleRespond = (submissionId: string) => {
     const submission = submissions.find(s => s.id === submissionId);
     if (submission) {
       alert(`Response sent to ${submission.userEmail} for ${submission.deviceInfo.deviceName}`);
     }
   };
 
-  const handleUpdateStatus = (submissionId, newStatus) => {
+  const handleUpdateStatus = (submissionId: string, newStatus: string) => {
     const updatedSubmissions = submissions.map(submission => {
       if (submission.id === submissionId) {
         return { ...submission, status: newStatus };
