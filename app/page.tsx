@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import DeviceForm from '@/components/DeviceForm';
 import QuoteDisplay from '@/components/QuoteDisplay';
 import SubmissionsList from '@/components/SubmissionsList';
-import { fetchPhoneSpecs } from '@/lib/api';
+import { fetchPhoneSpecs, DeviceInfo as ApiDeviceInfo } from '@/lib/api';
 
 type FormData = {
   userName: string;
@@ -15,7 +15,7 @@ type FormData = {
   deviceIssue: string;
 };
 
-type DeviceInfo = {
+type LocalDeviceInfo = {
   deviceName: string;
   deviceType: string;
   specifications: any;
@@ -38,7 +38,7 @@ type Submission = {
   deviceBrand: string;
   deviceModel: string;
   deviceIssue: string;
-  deviceInfo: DeviceInfo;
+  deviceInfo: LocalDeviceInfo;
   quote: Quote;
   timestamp: string;
   status: string;
@@ -49,7 +49,7 @@ export default function Home() {
   const [currentQuote, setCurrentQuote] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-
+  // Load submissions from localStorage on initial render
   useEffect(() => {
     const savedSubmissions = localStorage.getItem('deviceSubmissions');
     if (savedSubmissions) {
@@ -65,24 +65,36 @@ export default function Home() {
     setIsLoading(true);
     
     try {
-   
-      let deviceInfo: DeviceInfo = {
-        deviceName: `${formData.deviceBrand} ${formData.deviceModel}`,
-        deviceType: formData.deviceType,
-        specifications: {},
-      };
+      // Get device information from real API
+      let deviceInfo: LocalDeviceInfo;
       
-      if (formData.deviceType === 'smartphone' && formData.deviceBrand && formData.deviceModel) {
+      if (formData.deviceBrand && formData.deviceModel) {
         try {
-       
-          deviceInfo = await fetchPhoneSpecs(formData.deviceBrand, formData.deviceModel);
+          // Try to get phone specs from Wikipedia API
+          const apiDeviceInfo: ApiDeviceInfo = await fetchPhoneSpecs(
+            formData.deviceBrand, 
+            formData.deviceModel,
+            formData.deviceType
+          );
+          
+          // Convert API response to local format
+          deviceInfo = {
+            deviceName: apiDeviceInfo.deviceName,
+            deviceType: apiDeviceInfo.deviceType || formData.deviceType,
+            specifications: apiDeviceInfo.specifications,
+            ...apiDeviceInfo
+          };
         } catch (error) {
           console.log('Could not fetch phone specs, using fallback');
+          // Fallback if API fails
+          deviceInfo = {
+            deviceName: `${formData.deviceBrand} ${formData.deviceModel}`,
+            deviceType: formData.deviceType,
+            specifications: { message: 'Details not available from API' },
+          };
         }
-      }
-      
-     
-      if (!deviceInfo || Object.keys(deviceInfo).length === 0) {
+      } else {
+        // If no API data, create basic device info
         deviceInfo = {
           deviceName: `${formData.deviceBrand} ${formData.deviceModel}`,
           deviceType: formData.deviceType,
@@ -90,7 +102,7 @@ export default function Home() {
         };
       }
 
-
+      // Generate a repair quote
       const quote = generateRepairQuote(formData, deviceInfo);
 
       const newSubmission: Submission = {
@@ -102,12 +114,12 @@ export default function Home() {
         status: 'pending'
       };
 
-  
+      // Update state
       const updatedSubmissions = [newSubmission, ...submissions];
       setSubmissions(updatedSubmissions);
       setCurrentQuote({ ...quote, formData, deviceInfo });
 
-   
+      // Save to localStorage
       localStorage.setItem('deviceSubmissions', JSON.stringify(updatedSubmissions));
 
     } catch (error) {
@@ -118,11 +130,11 @@ export default function Home() {
     }
   };
 
-  const generateRepairQuote = (formData: FormData, deviceInfo: DeviceInfo): Quote => {
+  const generateRepairQuote = (formData: FormData, deviceInfo: LocalDeviceInfo): Quote => {
     const issue = formData.deviceIssue.toLowerCase();
     let assessment: string, cost: string, time: string, status: string;
 
-    // quote logic
+    // Realistic repair quote logic
     if (issue.includes('screen') || issue.includes('display') || issue.includes('crack')) {
       assessment = 'Screen replacement needed. Common repair with high success rate.';
       cost = formData.deviceType === 'smartphone' ? '$89 - $249' :
@@ -157,7 +169,7 @@ export default function Home() {
       status = 'assessment';
     }
 
- 
+    // Adjust cost based on device brand
     if (formData.deviceBrand === 'apple') {
       const costParts = cost.replace('$', '').split(' - ');
       const minCost = parseInt(costParts[0]) + 50;
