@@ -1,7 +1,19 @@
-// lib/api.js
+// lib/api.ts
 
-// Using real Wikipedia API for device information
-export async function fetchPhoneSpecs(brand, model) {
+type DeviceInfo = {
+  deviceName: string;
+  brand: string;
+  model: string;
+  description: string;
+  image: string | null;
+  specifications: Record<string, string>;
+  source: string;
+  apiSuccess: boolean;
+  [key: string]: any;
+};
+
+
+export async function fetchPhoneSpecs(brand: string, model: string): Promise<DeviceInfo> {
   try {
     const deviceName = `${brand} ${model}`;
     const response = await fetch(
@@ -14,7 +26,7 @@ export async function fetchPhoneSpecs(brand, model) {
     
     const data = await response.json();
     
-    // Generate realistic specifications based on brand and model
+   
     const specifications = generateSpecifications(brand, model);
     
     return {
@@ -31,7 +43,7 @@ export async function fetchPhoneSpecs(brand, model) {
   } catch (error) {
     console.error('Error fetching device specs:', error);
     
-    // Fallback data if API fails
+  
     return {
       deviceName: `${brand} ${model}`,
       brand,
@@ -44,7 +56,7 @@ export async function fetchPhoneSpecs(brand, model) {
   }
 }
 
-export async function fetchDeviceInfo(deviceName) {
+export async function fetchDeviceInfo(deviceName: string) {
   try {
     const response = await fetch(
       `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(deviceName)}`
@@ -75,16 +87,16 @@ export async function fetchDeviceInfo(deviceName) {
   }
 }
 
-function generateSpecifications(brand, model) {
-  const specs = {};
+function generateSpecifications(brand: string, model: string): Record<string, string> {
+  const specs: Record<string, string> = {};
   const brandLower = brand.toLowerCase();
   const modelLower = model.toLowerCase();
   
-  // Add basic specifications
+  // specifications
   specs.brand = brand;
   specs.model = model;
   
-  // Determine device type based on model
+
   if (modelLower.includes('iphone') || modelLower.includes('galaxy') || modelLower.includes('pixel')) {
     specs.type = 'Smartphone';
     specs.display = brandLower === 'apple' ? '6.1-inch Super Retina XDR' : '6.2-inch Dynamic AMOLED';
