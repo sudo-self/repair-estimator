@@ -1,9 +1,9 @@
 // lib/api.ts
-// lib/api.ts
+
 
 export type DeviceInfo = {
   deviceName: string;
-  deviceType?: string; // Make optional
+  deviceType?: string; 
   brand: string;
   model: string;
   description: string;
@@ -14,7 +14,7 @@ export type DeviceInfo = {
   [key: string]: any;
 };
 
-// Using real Wikipedia API for device information
+
 export async function fetchPhoneSpecs(brand: string, model: string, deviceType?: string): Promise<DeviceInfo> {
   try {
     const deviceName = `${brand} ${model}`;
@@ -146,7 +146,7 @@ function generateSpecifications(brand: string, model: string, deviceType?: strin
     specs.battery = 'Battery life varies';
   }
   
-  // Add operating system
+
   if (brandLower === 'apple') {
     specs.os = type === 'smartphone' ? 'iOS' :
                type === 'laptop' ? 'macOS' :
