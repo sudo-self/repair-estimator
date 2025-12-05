@@ -1,10 +1,37 @@
-// components/SubmissionsList.js
-
+// components/SubmissionsList.tsx
 'use client';
 
 import { useState } from 'react';
 
-export default function SubmissionsList({ submissions, onRespond, onUpdateStatus }) {
+interface Submission {
+  id: string;
+  userName: string;
+  userEmail: string;
+  deviceType: string;
+  deviceBrand: string;
+  deviceModel: string;
+  deviceIssue: string;
+  deviceInfo?: {
+    deviceName?: string;
+    [key: string]: any;
+  };
+  quote?: {
+    status?: string;
+    cost?: string;
+    time?: string;
+    deviceId?: string;
+  };
+  timestamp: string;
+  status: string;
+}
+
+interface SubmissionsListProps {
+  submissions: Submission[];
+  onRespond: (id: string) => void;
+  onUpdateStatus: (id: string, newStatus: string) => void;
+}
+
+export default function SubmissionsList({ submissions, onRespond, onUpdateStatus }: SubmissionsListProps) {
   const [filter, setFilter] = useState('all');
 
   const filteredSubmissions = submissions.filter(submission => {
@@ -16,7 +43,7 @@ export default function SubmissionsList({ submissions, onRespond, onUpdateStatus
     return true;
   });
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status?: string) => {
     switch (status) {
       case 'repairable': return 'bg-green-100 text-green-800';
       case 'assessment': return 'bg-yellow-100 text-yellow-800';
@@ -26,7 +53,7 @@ export default function SubmissionsList({ submissions, onRespond, onUpdateStatus
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status?: string) => {
     switch (status) {
       case 'repairable': return 'fa-check-circle';
       case 'assessment': return 'fa-hourglass-half';
