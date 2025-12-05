@@ -19,6 +19,12 @@ type LocalDeviceInfo = {
   deviceName: string;
   deviceType: string;
   specifications: any;
+  brand?: string;
+  model?: string;
+  description?: string;
+  image?: string | null;
+  source?: string;
+  apiSuccess?: boolean;
   [key: string]: any;
 };
 
@@ -71,19 +77,16 @@ export default function Home() {
       if (formData.deviceBrand && formData.deviceModel) {
         try {
           // Try to get phone specs from Wikipedia API
-          const apiDeviceInfo: ApiDeviceInfo = await fetchPhoneSpecs(
-            formData.deviceBrand, 
+          deviceInfo = await fetchPhoneSpecs(
+            formData.deviceBrand,
             formData.deviceModel,
             formData.deviceType
-          );
+          ) as LocalDeviceInfo;
           
-          // Convert API response to local format
-          deviceInfo = {
-            deviceName: apiDeviceInfo.deviceName,
-            deviceType: apiDeviceInfo.deviceType || formData.deviceType,
-            specifications: apiDeviceInfo.specifications,
-            ...apiDeviceInfo
-          };
+          // Make sure deviceType is set
+          if (!deviceInfo.deviceType) {
+            deviceInfo.deviceType = formData.deviceType;
+          }
         } catch (error) {
           console.log('Could not fetch phone specs, using fallback');
           // Fallback if API fails
@@ -121,6 +124,9 @@ export default function Home() {
 
       // Save to localStorage
       localStorage.setItem('deviceSubmissions', JSON.stringify(updatedSubmissions));
+
+      // Show success message
+      alert(`Thank you ${formData.userName}! Your device information has been submitted. Your quote is ready.`);
 
     } catch (error) {
       console.error('Error submitting form:', error);
