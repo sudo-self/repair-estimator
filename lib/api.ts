@@ -1,6 +1,5 @@
 // lib/api.ts
 
-
 export type DeviceInfo = {
   deviceName: string;
   deviceType?: string; 
@@ -53,6 +52,7 @@ export async function fetchPhoneSpecs(brand: string, model: string, deviceType?:
       brand,
       model,
       description: 'Device information could not be fetched from API. Using local data.',
+      image: null, // WAS MISSING - ADDED THIS
       specifications: generateSpecifications(brand, model, deviceType),
       source: 'Local Data',
       apiSuccess: false
@@ -76,7 +76,7 @@ export async function fetchDeviceInfo(deviceName: string) {
       success: true,
       deviceName: data.title,
       description: data.extract,
-      image: data.thumbnail?.source,
+      image: data.thumbnail?.source || null,
       source: 'Wikipedia API'
     };
     
@@ -86,6 +86,7 @@ export async function fetchDeviceInfo(deviceName: string) {
       success: false,
       deviceName: deviceName,
       description: 'Device information not available from API',
+      image: null, // Add this for consistency
       source: 'Local Data'
     };
   }
@@ -145,7 +146,6 @@ function generateSpecifications(brand: string, model: string, deviceType?: strin
     specs.storage = 'Storage varies by model';
     specs.battery = 'Battery life varies';
   }
-  
 
   if (brandLower === 'apple') {
     specs.os = type === 'smartphone' ? 'iOS' :
