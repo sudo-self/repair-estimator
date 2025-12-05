@@ -1,7 +1,9 @@
 // lib/api.ts
+// lib/api.ts
 
-type DeviceInfo = {
+export type DeviceInfo = {
   deviceName: string;
+  deviceType?: string; // Make optional
   brand: string;
   model: string;
   description: string;
@@ -12,8 +14,8 @@ type DeviceInfo = {
   [key: string]: any;
 };
 
-
-export async function fetchPhoneSpecs(brand: string, model: string): Promise<DeviceInfo> {
+// Using real Wikipedia API for device information
+export async function fetchPhoneSpecs(brand: string, model: string, deviceType?: string): Promise<DeviceInfo> {
   try {
     const deviceName = `${brand} ${model}`;
     const response = await fetch(
@@ -26,11 +28,12 @@ export async function fetchPhoneSpecs(brand: string, model: string): Promise<Dev
     
     const data = await response.json();
     
-   
-    const specifications = generateSpecifications(brand, model);
+    // Generate realistic specifications based on brand and model
+    const specifications = generateSpecifications(brand, model, deviceType);
     
     return {
       deviceName: data.title || deviceName,
+      deviceType: deviceType || determineDeviceType(brand, model),
       brand,
       model,
       description: data.extract || 'No description available',
@@ -43,13 +46,14 @@ export async function fetchPhoneSpecs(brand: string, model: string): Promise<Dev
   } catch (error) {
     console.error('Error fetching device specs:', error);
     
-  
+    // Fallback data if API fails
     return {
       deviceName: `${brand} ${model}`,
+      deviceType: deviceType || 'smartphone',
       brand,
       model,
       description: 'Device information could not be fetched from API. Using local data.',
-      specifications: generateSpecifications(brand, model),
+      specifications: generateSpecifications(brand, model, deviceType),
       source: 'Local Data',
       apiSuccess: false
     };
@@ -87,41 +91,54 @@ export async function fetchDeviceInfo(deviceName: string) {
   }
 }
 
-function generateSpecifications(brand: string, model: string): Record<string, string> {
+function determineDeviceType(brand: string, model: string): string {
+  const modelLower = model.toLowerCase();
+  if (modelLower.includes('iphone') || modelLower.includes('galaxy') || modelLower.includes('pixel')) {
+    return 'smartphone';
+  } else if (modelLower.includes('macbook') || modelLower.includes('xps') || modelLower.includes('thinkpad')) {
+    return 'laptop';
+  } else if (modelLower.includes('ipad') || modelLower.includes('tab')) {
+    return 'tablet';
+  } else if (modelLower.includes('watch')) {
+    return 'smartwatch';
+  } else {
+    return 'other';
+  }
+}
+
+function generateSpecifications(brand: string, model: string, deviceType?: string): Record<string, string> {
   const specs: Record<string, string> = {};
   const brandLower = brand.toLowerCase();
   const modelLower = model.toLowerCase();
+  const type = deviceType || determineDeviceType(brand, model);
   
-  // specifications
+  // Add basic specifications
   specs.brand = brand;
   specs.model = model;
+  specs.type = type.charAt(0).toUpperCase() + type.slice(1);
   
-
-  if (modelLower.includes('iphone') || modelLower.includes('galaxy') || modelLower.includes('pixel')) {
-    specs.type = 'Smartphone';
+  // Determine device type based on model or provided type
+  if (type === 'smartphone') {
     specs.display = brandLower === 'apple' ? '6.1-inch Super Retina XDR' : '6.2-inch Dynamic AMOLED';
     specs.processor = brandLower === 'apple' ? 'A15 Bionic' : 'Snapdragon 8 Gen 2';
     specs.ram = brandLower === 'apple' ? '6GB' : '8GB';
     specs.storage = '128GB/256GB/512GB';
     specs.battery = 'Up to 20 hours video playback';
     specs.camera = 'Dual/Triple camera system';
-  } else if (modelLower.includes('macbook') || modelLower.includes('xps') || modelLower.includes('thinkpad')) {
-    specs.type = 'Laptop';
+  } else if (type === 'laptop') {
     specs.display = '13.3-inch/14-inch/15.6-inch Retina/FHD/4K';
     specs.processor = brandLower === 'apple' ? 'Apple M2/M3' : 'Intel Core i5/i7 or AMD Ryzen 5/7';
     specs.ram = '8GB/16GB/32GB';
     specs.storage = '256GB/512GB/1TB SSD';
     specs.graphics = 'Integrated/Discrete GPU';
     specs.battery = 'Up to 18 hours';
-  } else if (modelLower.includes('ipad') || modelLower.includes('tab')) {
-    specs.type = 'Tablet';
+  } else if (type === 'tablet') {
     specs.display = '10.2-inch/10.9-inch/12.9-inch Retina Display';
     specs.processor = brandLower === 'apple' ? 'Apple M1/A14 Bionic' : 'Snapdragon 8cx/MediaTek Dimensity';
     specs.ram = '4GB/8GB';
     specs.storage = '64GB/128GB/256GB';
     specs.battery = 'Up to 10 hours';
   } else {
-    specs.type = 'Electronic Device';
     specs.display = 'Various sizes available';
     specs.processor = 'Processor varies by model';
     specs.ram = 'Memory varies by model';
@@ -131,13 +148,13 @@ function generateSpecifications(brand: string, model: string): Record<string, st
   
   // Add operating system
   if (brandLower === 'apple') {
-    specs.os = specs.type === 'Smartphone' ? 'iOS' :
-               specs.type === 'Laptop' ? 'macOS' :
-               specs.type === 'Tablet' ? 'iPadOS' : 'Apple OS';
+    specs.os = type === 'smartphone' ? 'iOS' :
+               type === 'laptop' ? 'macOS' :
+               type === 'tablet' ? 'iPadOS' : 'Apple OS';
   } else if (brandLower === 'microsoft') {
     specs.os = 'Windows';
   } else if (brandLower === 'google') {
-    specs.os = 'Android/Chrome OS';
+    specs.os = type === 'laptop' ? 'Chrome OS' : 'Android';
   } else {
     specs.os = 'Operating System varies';
   }
